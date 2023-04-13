@@ -1,19 +1,27 @@
 const express = require('express');
 const app = express();
-const MongoClient = require('mongodb').MongoClient;
+const { MongoClient } = require('mongodb');
 const PORT = 8001;
 require('dotenv').config();
 
 const dbConnectionStr = process.env.DB_string;
+const client = new MongoClient(dbConnectionStr);
 
 let db;
 
-MongoClient.connect(dbConnectionStr, { useUnifiedTopology: true }).then(
-  (client) => {
-    console.log(`Connected to Database`);
+client
+  .connect((err) => {
+    if (err) {
+      console.error(err);
+      return false;
+    }
+    app.listen(process.env.PORT || PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .then((client) => {
     db = client.db('friend-quote');
-  }
-);
+  });
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -21,13 +29,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.get('/', async (request, response) => {
-  db.collection('quote')
-    .find()
-    .toArray()
-    .then((data) => {
-      response.render('index.ejs', { quotes: data });
-    })
-    .catch((error) => console.error(error));
+  let data = await client.db.collection('quote').find().toArray();
+  return response.render('index.ejs', { quotes: data });
 });
 
 app.post('/addQuote', (request, response) => {
@@ -77,7 +80,3 @@ app.post('/addQuote', (request, response) => {
 //     })
 //     .catch((error) => console.error(error));
 // });
-
-app.listen(process.env.PORT || PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
