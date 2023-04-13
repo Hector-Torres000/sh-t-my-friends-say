@@ -20,7 +20,7 @@ app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.get('/', (request, response) => {
+app.get('/', async (request, response) => {
   db.collection('quote')
     .find()
     .toArray()
